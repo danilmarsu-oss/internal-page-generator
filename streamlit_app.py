@@ -210,19 +210,53 @@ def render_content_generator_tab() -> None:
         key="content_page_types",
     )
 
-    st.markdown("CSV requirements: columns `brand`, `geo`, optional `page type`.")
+    st.markdown("Input requirements: `brand`, `geo`, optional `page type`.")
     st.markdown("If `page type` is empty or `all`, generator creates all 9 default pages.")
 
-    uploaded_file = st.file_uploader("Upload CSV", type=["csv"], key="content_csv")
+    input_mode = st.radio(
+        "Input mode",
+        options=["CSV Upload", "Manual Input"],
+        horizontal=True,
+        key="content_input_mode",
+    )
 
-    if uploaded_file is not None:
-        preview = preview_csv_rows(uploaded_file.getvalue())
-        if preview:
-            st.dataframe(preview, use_container_width=True)
-        else:
-            st.warning("CSV has no data rows.")
+    uploaded_file = None
+    manual_rows: List[dict] = []
 
-    generate_clicked = st.button("Generate HTML", type="primary", disabled=uploaded_file is None, key="content_generate")
+    if input_mode == "CSV Upload":
+        uploaded_file = st.file_uploader("Upload CSV", type=["csv"], key="content_csv")
+        if uploaded_file is not None:
+            preview = preview_csv_rows(uploaded_file.getvalue())
+            if preview:
+                st.dataframe(preview, use_container_width=True)
+            else:
+                st.warning("CSV has no data rows.")
+    else:
+        st.caption("Enter rows manually: brand + geo are required, page type is optional.")
+        st.session_state.setdefault(
+            "content_manual_seed",
+            [{"brand": "", "geo": "", "page type": "all"}],
+        )
+        manual_table = st.data_editor(
+            st.session_state["content_manual_seed"],
+            num_rows="dynamic",
+            use_container_width=True,
+            key="content_manual_table",
+            column_config={
+                "brand": st.column_config.TextColumn("brand"),
+                "geo": st.column_config.TextColumn("geo"),
+                "page type": st.column_config.TextColumn("page type"),
+            },
+        )
+        if hasattr(manual_table, "to_dict"):
+            manual_rows = manual_table.to_dict(orient="records")
+        elif isinstance(manual_table, list):
+            manual_rows = manual_table
+
+    is_generate_disabled = (
+        uploaded_file is None if input_mode == "CSV Upload" else len(manual_rows) == 0
+    )
+    generate_clicked = st.button("Generate HTML", type="primary", disabled=is_generate_disabled, key="content_generate")
 
     if not generate_clicked:
         return
@@ -239,7 +273,21 @@ def render_content_generator_tab() -> None:
         tmp_path = Path(tmp_dir)
         csv_path = tmp_path / "input.csv"
         output_dir = tmp_path / "generated_pages"
-        csv_path.write_bytes(uploaded_file.getvalue())
+        if input_mode == "CSV Upload":
+            csv_path.write_bytes(uploaded_file.getvalue())
+        else:
+            csv_buffer = io.StringIO()
+            writer = csv.DictWriter(csv_buffer, fieldnames=["brand", "geo", "page type"])
+            writer.writeheader()
+            for row in manual_rows:
+                writer.writerow(
+                    {
+                        "brand": str((row or {}).get("brand", "")).strip(),
+                        "geo": str((row or {}).get("geo", "")).strip(),
+                        "page type": str((row or {}).get("page type", "")).strip(),
+                    }
+                )
+            csv_path.write_text(csv_buffer.getvalue(), encoding="utf-8")
 
         try:
             tasks = parse_csv_tasks(csv_path, fallback_page_types=fallback_page_types)

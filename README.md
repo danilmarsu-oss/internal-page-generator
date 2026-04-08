@@ -52,7 +52,8 @@ streamlit run streamlit_app.py
 
 Після запуску:
 - вставляєш Anthropic API key в UI
-- завантажуєш CSV
+- обираєш режим вводу: `CSV Upload` або `Manual Input`
+- або завантажуєш CSV, або вводиш рядки вручну в таблиці (`brand`, `geo`, `page type`)
 - у вкладці `HTML Content Generator` натискаєш `Generate HTML`
 - скачуєш `generated_pages.zip`
 
