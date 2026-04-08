@@ -115,6 +115,8 @@ def build_prompt(page_type: str, brand: str, geo: str) -> str:
         "Use we/our formulations because it's for the official website. "
         f"Mention that this is an official website in {geo}. "
         "Return plain HTML only (no markdown, no code fences). "
+        "This must be a text content file in plain HTML format, not a full ready-made web page template "
+        "(no complete site layout with html/head/body wrappers unless critically needed for meta tags). "
         "Include meta title and meta description in HTML."
     )
 
