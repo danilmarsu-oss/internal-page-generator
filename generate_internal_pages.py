@@ -117,6 +117,7 @@ def build_prompt(page_type: str, brand: str, geo: str) -> str:
         "Return plain HTML only (no markdown, no code fences). "
         "This must be a text content file in plain HTML format, not a full ready-made web page template "
         "(no complete site layout with html/head/body wrappers unless critically needed for meta tags). "
+        "Ensure the output is complete and not truncated. Close all opened HTML tags. "
         "Include meta title and meta description in HTML."
     )
 
@@ -222,7 +223,7 @@ def anthropic_request(
     temperature: float,
     timeout: int,
     ssl_context: ssl.SSLContext,
-) -> str:
+) -> Tuple[str, Optional[str]]:
     payload = {
         "model": model,
         "max_tokens": max_tokens,
@@ -246,13 +247,14 @@ def anthropic_request(
 
     response = json.loads(body)
     content = response.get("content", [])
+    stop_reason = response.get("stop_reason")
     text_blocks: List[str] = []
 
     for block in content:
         if block.get("type") == "text":
             text_blocks.append(block.get("text", ""))
 
-    return "\n".join(text_blocks).strip()
+    return "\n".join(text_blocks).strip(), (str(stop_reason) if stop_reason is not None else None)
 
 
 def clean_html_output(text: str) -> str:
@@ -261,6 +263,19 @@ def clean_html_output(text: str) -> str:
     if fence_match:
         return fence_match.group(1).strip()
     return cleaned
+
+
+def merge_with_overlap(existing: str, addition: str, max_overlap: int = 1200) -> str:
+    if not existing:
+        return addition
+    if not addition:
+        return existing
+
+    cap = min(len(existing), len(addition), max_overlap)
+    for overlap in range(cap, 0, -1):
+        if existing.endswith(addition[:overlap]):
+            return existing + addition[overlap:]
+    return existing + addition
 
 
 def generate_with_retries(
@@ -273,11 +288,11 @@ def generate_with_retries(
     retries: int,
     retry_base_delay: float,
     ssl_context: ssl.SSLContext,
-) -> str:
+) -> Tuple[str, Optional[str]]:
     last_error: Optional[Exception] = None
     for attempt in range(1, retries + 1):
         try:
-            raw = anthropic_request(
+            raw, stop_reason = anthropic_request(
                 api_key=api_key,
                 model=model,
                 max_tokens=max_tokens,
@@ -286,7 +301,7 @@ def generate_with_retries(
                 timeout=timeout,
                 ssl_context=ssl_context,
             )
-            return clean_html_output(raw)
+            return clean_html_output(raw), stop_reason
         except urllib.error.HTTPError as e:
             retryable = e.code in {408, 409, 429, 500, 502, 503, 504}
             body = e.read().decode("utf-8", errors="ignore")
@@ -382,6 +397,7 @@ def generate_job(
     retries: int,
     retry_base_delay: float,
     ssl_context: ssl.SSLContext,
+    max_continuations: int,
     output_dir: Path,
 ) -> PageResult:
     page_slug = slugify(page_type)
@@ -391,7 +407,7 @@ def generate_job(
     target_file = output_dir / f"{brand_slug}__{geo_slug}__{task_slug}" / f"{page_slug}.html"
     prompt = build_prompt(page_type=page_type, brand=task.brand, geo=task.geo)
 
-    html = generate_with_retries(
+    html, stop_reason = generate_with_retries(
         api_key=api_key,
         model=model,
         max_tokens=max_tokens,
@@ -402,6 +418,31 @@ def generate_job(
         retry_base_delay=retry_base_delay,
         ssl_context=ssl_context,
     )
+
+    continuations_done = 0
+    while stop_reason == "max_tokens" and continuations_done < max_continuations:
+        tail = html[-3000:] if len(html) > 3000 else html
+        continuation_prompt = (
+            "Continue the same HTML content from exactly where it stopped.\n"
+            "Return only the remaining HTML fragment.\n"
+            "Do not repeat previously generated text.\n"
+            "Keep style and language consistent.\n"
+            f"Current generated tail:\n{tail}"
+        )
+        continuation, stop_reason = generate_with_retries(
+            api_key=api_key,
+            model=model,
+            max_tokens=max_tokens,
+            prompt=continuation_prompt,
+            temperature=temperature,
+            timeout=timeout,
+            retries=retries,
+            retry_base_delay=retry_base_delay,
+            ssl_context=ssl_context,
+        )
+        html = merge_with_overlap(html, continuation)
+        continuations_done += 1
+
     save_html(html, target_file)
 
     return PageResult(
@@ -425,6 +466,7 @@ def run_generation(
     retry_base_delay: float,
     max_workers: int,
     ssl_context: ssl.SSLContext,
+    max_continuations: int,
     progress_callback: Optional[ProgressCallback] = None,
 ) -> Dict[str, object]:
     jobs = [(task, page_type) for task in tasks for page_type in task.page_types]
@@ -450,6 +492,7 @@ def run_generation(
                 retries=retries,
                 retry_base_delay=retry_base_delay,
                 ssl_context=ssl_context,
+                max_continuations=max_continuations,
                 output_dir=output_dir,
             ): (task, page_type)
             for task, page_type in jobs
@@ -518,6 +561,12 @@ def build_parser() -> argparse.ArgumentParser:
         help="Claude model id, or 'auto' to pick available model automatically (default: auto)",
     )
     parser.add_argument("--max-tokens", type=int, default=2500, help="max_tokens for API response")
+    parser.add_argument(
+        "--max-continuations",
+        type=int,
+        default=3,
+        help="How many extra continuation requests to make when output is cut by token limit (default: 3)",
+    )
     parser.add_argument("--temperature", type=float, default=0.6, help="Sampling temperature")
     parser.add_argument("--timeout", type=int, default=120, help="HTTP timeout (seconds)")
     parser.add_argument("--retries", type=int, default=4, help="Retries per request")
@@ -605,6 +654,7 @@ def main() -> int:
         retry_base_delay=args.retry_base_delay,
         max_workers=args.max_workers,
         ssl_context=ssl_context,
+        max_continuations=args.max_continuations,
         progress_callback=cli_progress,
     )
 

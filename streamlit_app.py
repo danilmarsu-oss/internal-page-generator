@@ -192,11 +192,26 @@ def render_content_generator_tab() -> None:
         api_key = st.text_input("Anthropic API key", type="password", key="content_api_key")
         model = st.text_input("Model", value="auto", key="content_model")
         max_workers = st.slider("Parallel requests", min_value=1, max_value=20, value=5, key="content_workers")
-        max_tokens = st.number_input("Max tokens", min_value=500, max_value=8192, value=2500, step=100, key="content_max_tokens")
+        max_tokens = st.number_input(
+            "Max tokens",
+            min_value=500,
+            max_value=12000,
+            value=3500,
+            step=100,
+            key="content_max_tokens",
+        )
     with settings_col2:
         temperature = st.slider("Temperature", min_value=0.0, max_value=1.0, value=0.6, step=0.1, key="content_temperature")
         timeout = st.number_input("Timeout (seconds)", min_value=10, max_value=600, value=120, step=10, key="content_timeout")
         retries = st.number_input("Retries", min_value=1, max_value=10, value=4, step=1, key="content_retries")
+        max_continuations = st.number_input(
+            "Auto-continue chunks",
+            min_value=0,
+            max_value=10,
+            value=3,
+            step=1,
+            key="content_max_continuations",
+        )
         ca_bundle = st.text_input("CA bundle path (optional)", value="", key="content_ca_bundle")
 
     insecure_no_verify = st.checkbox("Disable SSL verify (unsafe)", value=False, key="content_insecure")
@@ -344,6 +359,7 @@ def render_content_generator_tab() -> None:
             retry_base_delay=1.5,
             max_workers=int(max_workers),
             ssl_context=ssl_context,
+            max_continuations=int(max_continuations),
             progress_callback=on_progress,
         )
 
