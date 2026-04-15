@@ -27,6 +27,10 @@ SITE_FIELD_DEFAULTS: Dict[str, str] = {
     "footer_policy_links": "about us, contact us, bonus policy, privacy policy, responsible gambling",
     "copyright_year": "2026",
     "github_repo_name": "casimba-casino-site",
+    "cf_account_id": "",
+    "cf_zone_id": "",
+    "cf_api_token": "",
+    "custom_domain": "casino-example.com",
     "header_footer_color": "#175576",
     "header_button_color": "#c5740e",
     "cta_color": "#f3910c",
@@ -128,6 +132,10 @@ def build_site_config_from_values(values: Dict[str, str]) -> SitePromptConfig:
         copyright_year=values["copyright_year"].strip(),
         github_repo_name=values["github_repo_name"].strip(),
         trust_links=values["trust_links"].strip(),
+        cf_account_id=values["cf_account_id"].strip(),
+        cf_zone_id=values["cf_zone_id"].strip(),
+        cf_api_token=values["cf_api_token"].strip(),
+        custom_domain=values["custom_domain"].strip(),
     )
 
 
@@ -384,7 +392,7 @@ def render_content_generator_tab() -> None:
 
 def render_codex_site_generator_tab() -> None:
     st.subheader("Codex Site Generator Prompt Pack")
-    st.caption("Fill variables once and get 5 ready-to-send prompts for your Codex website workflow.")
+    st.caption("Fill variables once and get 6 ready-to-send prompts for your Codex website workflow.")
     ensure_site_defaults()
     st.session_state.setdefault("site_selected_preset", "(none)")
     st.session_state.setdefault("site_last_selected_preset", "(none)")
@@ -465,6 +473,10 @@ def render_codex_site_generator_tab() -> None:
         st.text_input("Footer policy links", key=_site_key("footer_policy_links"))
         st.text_input("Copyright year", key=_site_key("copyright_year"))
         st.text_input("GitHub repository name", key=_site_key("github_repo_name"))
+        st.text_input("Cloudflare Account ID", key=_site_key("cf_account_id"))
+        st.text_input("Cloudflare Zone ID", key=_site_key("cf_zone_id"))
+        st.text_input("Custom domain", key=_site_key("custom_domain"))
+        st.text_input("Cloudflare API token", key=_site_key("cf_api_token"), type="password")
 
     with col2:
         st.text_input("Header/Footer color", key=_site_key("header_footer_color"))
@@ -486,7 +498,7 @@ def render_codex_site_generator_tab() -> None:
     st.text_input("Redirect target URL", key=_site_key("redirect_target_url"))
     st.text_area("Trust links (comma separated)", key=_site_key("trust_links"), height=80)
 
-    generate_clicked = st.button("Generate 5 Prompts", type="primary", key="site_generate_prompts")
+    generate_clicked = st.button("Generate 6 Prompts", type="primary", key="site_generate_prompts")
     if generate_clicked:
         config = build_site_config_from_values(current_site_values())
         prompt_pack = build_codex_prompt_pack(config)

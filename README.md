@@ -57,13 +57,14 @@ streamlit run streamlit_app.py
 - у вкладці `HTML Content Generator` натискаєш `Generate HTML`
 - скачуєш `generated_pages.zip`
 
-## 5) Генератор 5 промптів для Codex (нове)
+## 5) Генератор 6 промптів для Codex (нове)
 
 У вкладці `Codex Site Generator`:
 - можна зберігати пресети налаштувань (`Save`), завантажувати (`Load`) і видаляти (`Delete`)
 - заповнюєш змінні (brand, H1, мова, кольори, шляхи до картинок/папок, redirect URL, repo name)
-- натискаєш `Generate 5 Prompts`
-- отримуєш 5 готових промптів для workflow генерації сайту
+- додаєш змінні Cloudflare для деплою: `Cloudflare Account ID`, `Cloudflare Zone ID`, `Cloudflare API token`, `Custom domain`
+- натискаєш `Generate 6 Prompts`
+- отримуєш 6 готових промптів для workflow генерації сайту + деплою
 - можеш скачати все одним файлом `prompt-pack.md`
 
 Пресети зберігаються локально у файлі:
@@ -74,7 +75,7 @@ streamlit run streamlit_app.py
 У тій самій вкладці `Codex Site Generator`:
 - після генерації prompt pack введи `OpenAI API key`
 - задай модель (дефолт `gpt-5-codex`)
-- обери кроки, які запускати (1-5)
+- обери кроки, які запускати (1-6)
 - натисни `Run via Codex API`
 
 На виході:

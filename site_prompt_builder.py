@@ -33,6 +33,10 @@ class SitePromptConfig:
     copyright_year: str
     github_repo_name: str
     trust_links: str
+    cf_account_id: str
+    cf_zone_id: str
+    cf_api_token: str
+    custom_domain: str
 
 
 def build_codex_prompt_pack(config: SitePromptConfig) -> List[Tuple[str, str]]:
@@ -89,7 +93,11 @@ def build_codex_prompt_pack(config: SitePromptConfig) -> List[Tuple[str, str]]:
         "Критично важливо:\n"
         "1. Опублікуй весь текст повністю, не обрізай.\n"
         "2. Не видаляй уже наявні блоки: банер, CTA, grid ігор, payment methods, reviews, FAQ.\n"
-        "3. Інтегруй новий текст в існуючу структуру й стилі, без ламання верстки."
+        "3. Інтегруй новий текст в існуючу структуру й стилі, без ламання верстки.\n"
+        "4. Reviews і FAQ блоки мають бути заповнені контентом саме з документа "
+        f"`{config.homepage_text_source}` (тобто з `{config.brand} homepage.txt`, якщо так названо файл).\n"
+        "5. Не дублюй reviews і FAQ: на сторінці має бути тільки один reviews-блок і один FAQ-блок.\n"
+        "6. Контент, який ти виніс у reviews/FAQ блоки з джерела, не повторюй вдруге в SEO-блоці."
     )
 
     prompt_3 = (
@@ -125,12 +133,32 @@ def build_codex_prompt_pack(config: SitePromptConfig) -> List[Tuple[str, str]]:
         "5. Поверни URL репозиторію та короткий changelog."
     )
 
+    prompt_6 = (
+        "Тепер виконай деплой у production через Cloudflare Pages.\n\n"
+        "Змінні для Cloudflare API:\n"
+        f"- Cloudflare Account ID: {config.cf_account_id}\n"
+        f"- Cloudflare Zone ID: {config.cf_zone_id}\n"
+        f"- Cloudflare API Token: {config.cf_api_token}\n"
+        f"- Custom Domain: {config.custom_domain}\n"
+        f"- GitHub repository: {config.github_repo_name}\n\n"
+        "Задача:\n"
+        "1. Підключись до Cloudflare по API.\n"
+        "2. Створи або онови Cloudflare Pages project для цього репозиторію.\n"
+        "3. Залий сайт із GitHub repo (production deploy).\n"
+        "4. Підключи custom domain до цього Pages project.\n"
+        "5. Додай/перевір DNS записи в зоні (через Zone ID), щоб домен вів на Pages.\n"
+        "6. Перевір, що сайт відкривається по кастомному домену.\n"
+        "7. Поверни у відповіді: Pages project name, production URL, custom domain status, "
+        "що саме було створено/оновлено в Cloudflare."
+    )
+
     return [
         ("Prompt 1 - Build Homepage", prompt_1),
         ("Prompt 2 - Inject Homepage Content", prompt_2),
         ("Prompt 3 - Create Internal Pages", prompt_3),
         ("Prompt 4 - Forms and Redirects", prompt_4),
         ("Prompt 5 - Publish to GitHub", prompt_5),
+        ("Prompt 6 - Deploy to Cloudflare Pages", prompt_6),
     ]
 
 
