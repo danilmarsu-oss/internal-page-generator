@@ -104,41 +104,13 @@ def save_site_presets(presets: Dict[str, Dict[str, str]]) -> None:
 
 
 def build_site_config_from_values(values: Dict[str, str]) -> SitePromptConfig:
-    return SitePromptConfig(
-        brand=values["brand"].strip(),
-        language_name=values["language_name"].strip(),
-        lang_code=values["lang_code"].strip(),
-        h1_text=values["h1_text"].strip(),
-        logo_path=values["logo_path"].strip(),
-        homepage_banner_path=values["homepage_banner_path"].strip(),
-        game_images_dir=values["game_images_dir"].strip(),
-        payment_methods_dir=values["payment_methods_dir"].strip(),
-        trust_badges_dir=values["trust_badges_dir"].strip(),
-        game_providers_dir=values["game_providers_dir"].strip(),
-        extra_images_dir=values["extra_images_dir"].strip(),
-        homepage_text_source=values["homepage_text_source"].strip(),
-        texts_dir=values["texts_dir"].strip(),
-        favicon_path=values["favicon_path"].strip(),
-        header_footer_color=values["header_footer_color"].strip(),
-        header_button_color=values["header_button_color"].strip(),
-        cta_color=values["cta_color"].strip(),
-        main_background_color=values["main_background_color"].strip(),
-        cta_text=values["cta_text"].strip(),
-        login_button_text=values["login_button_text"].strip(),
-        register_button_text=values["register_button_text"].strip(),
-        header_links_text=values["header_links_text"].strip(),
-        footer_policy_links=values["footer_policy_links"].strip(),
-        social_links=values["social_links"].strip(),
-        redirect_path=values["redirect_path"].strip(),
-        redirect_target_url=values["redirect_target_url"].strip(),
-        copyright_year=values["copyright_year"].strip(),
-        github_repo_name=values["github_repo_name"].strip(),
-        trust_links=values["trust_links"].strip(),
-        cf_account_id=values["cf_account_id"].strip(),
-        cf_zone_id=values["cf_zone_id"].strip(),
-        cf_api_token=values["cf_api_token"].strip(),
-        custom_domain=values["custom_domain"].strip(),
-    )
+    # Build config dynamically from actual dataclass fields to avoid
+    # breakages when streamlit_app.py and site_prompt_builder.py versions
+    # are temporarily out of sync during deploy.
+    payload: Dict[str, str] = {}
+    for field_name in SitePromptConfig.__dataclass_fields__.keys():
+        payload[field_name] = str(values.get(field_name, SITE_FIELD_DEFAULTS.get(field_name, ""))).strip()
+    return SitePromptConfig(**payload)
 
 
 def simple_slug(value: str) -> str:
