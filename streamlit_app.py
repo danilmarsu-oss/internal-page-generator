@@ -25,6 +25,7 @@ SITE_FIELD_DEFAULTS: Dict[str, str] = {
     "register_button_text": "Rekisteröidy",
     "header_links_text": "Login, Bonus, App",
     "footer_policy_links": "about us, contact us, bonus policy, privacy policy, responsible gambling",
+    "social_links": "https://facebook.com/brand, https://instagram.com/brand, https://x.com/brand",
     "copyright_year": "2026",
     "github_repo_name": "casimba-casino-site",
     "cf_account_id": "",
@@ -127,6 +128,7 @@ def build_site_config_from_values(values: Dict[str, str]) -> SitePromptConfig:
         register_button_text=values["register_button_text"].strip(),
         header_links_text=values["header_links_text"].strip(),
         footer_policy_links=values["footer_policy_links"].strip(),
+        social_links=values["social_links"].strip(),
         redirect_path=values["redirect_path"].strip(),
         redirect_target_url=values["redirect_target_url"].strip(),
         copyright_year=values["copyright_year"].strip(),
@@ -471,6 +473,7 @@ def render_codex_site_generator_tab() -> None:
         st.text_input("Registration button text", key=_site_key("register_button_text"))
         st.text_input("Header links", key=_site_key("header_links_text"))
         st.text_input("Footer policy links", key=_site_key("footer_policy_links"))
+        st.text_area("Social links (comma separated)", key=_site_key("social_links"), height=70)
         st.text_input("Copyright year", key=_site_key("copyright_year"))
         st.text_input("GitHub repository name", key=_site_key("github_repo_name"))
         st.text_input("Cloudflare Account ID", key=_site_key("cf_account_id"))

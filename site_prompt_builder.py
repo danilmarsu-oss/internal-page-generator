@@ -28,6 +28,7 @@ class SitePromptConfig:
     register_button_text: str
     header_links_text: str
     footer_policy_links: str
+    social_links: str
     redirect_path: str
     redirect_target_url: str
     copyright_year: str
@@ -119,7 +120,9 @@ def build_codex_prompt_pack(config: SitePromptConfig) -> List[Tuple[str, str]]:
         "3. Створи файл `_redirects` з 301 редіректом:\n"
         f"   {config.redirect_path} {config.redirect_target_url} 301\n"
         f"4. Простав посилання `{config.redirect_path}` на кнопку реєстрації та головну CTA кнопку.\n"
-        "5. Перевір, щоб усі сторінки збирались без помилок, а всі лінки відкривались."
+        f"5. Додай у футер посилання на офіційні соцмережі: {config.social_links}.\n"
+        "Соцпосилання подані через кому; створи для кожного окремий клікабельний лінк.\n"
+        "6. Перевір, щоб усі сторінки збирались без помилок, а всі лінки відкривались."
     )
 
     prompt_5 = (

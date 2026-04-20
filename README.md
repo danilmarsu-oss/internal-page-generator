@@ -62,6 +62,7 @@ streamlit run streamlit_app.py
 У вкладці `Codex Site Generator`:
 - можна зберігати пресети налаштувань (`Save`), завантажувати (`Load`) і видаляти (`Delete`)
 - заповнюєш змінні (brand, H1, мова, кольори, шляхи до картинок/папок, redirect URL, repo name)
+- додаєш `Social links (comma separated)` для Prompt 4 (посилання на офіційні соцмережі у футері)
 - додаєш змінні Cloudflare для деплою: `Cloudflare Account ID`, `Cloudflare Zone ID`, `Cloudflare API token`, `Custom domain`
 - натискаєш `Generate 6 Prompts`
 - отримуєш 6 готових промптів для workflow генерації сайту + деплою
